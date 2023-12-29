@@ -1,0 +1,72 @@
+/**
+ * @param {string} currentPassword
+ */
+function getNextValidPassword(currentPassword) {
+  const min = "a".charCodeAt(0);
+  const max = "z".charCodeAt(0);
+  const forbidden = ["i".charCodeAt(0), "o".charCodeAt(0), "l".charCodeAt(0)];
+
+  const passwordArray = currentPassword.split("");
+  let isPasswordValid = false;
+
+  while (!isPasswordValid) {
+    // 1 - Increment password
+    let i = passwordArray.length - 1;
+    while (i >= 0) {
+      const charCode = passwordArray[i].charCodeAt(0);
+      if (charCode === max) {
+        passwordArray[i] = String.fromCharCode(min);
+        i--;
+      } else {
+        passwordArray[i] = String.fromCharCode(charCode + 1);
+        break;
+      }
+    }
+
+    // 2 - Check if password is valid
+    const hasForbidden = forbidden.some((charCode) =>
+      passwordArray.includes(String.fromCharCode(charCode))
+    );
+    let hasIncreasingStraight = false;
+    let consideredPairs = [];
+    let pairCount = 0;
+
+    let currentCode;
+    let previousCode;
+    let prePreviousCode;
+    for (let i = 0; i < passwordArray.length; i++) {
+      currentCode = passwordArray[i].charCodeAt(0);
+
+      // check if it is a two pair sequence
+      if (i > 0) {
+        previousCode = passwordArray[i - 1].charCodeAt(0);
+        if (
+          currentCode == previousCode &&
+          !consideredPairs.includes(passwordArray[i])
+        ) {
+          pairCount++;
+          consideredPairs.push(passwordArray[i]);
+        }
+      }
+
+      // check if it is an increasing straight
+      if (i >= 2) {
+        prePreviousCode = passwordArray[i - 2].charCodeAt("0");
+        if (
+          currentCode - previousCode === 1 &&
+          previousCode - prePreviousCode === 1
+        ) {
+          hasIncreasingStraight = true;
+        }
+      }
+    }
+
+    isPasswordValid = !hasForbidden && hasIncreasingStraight && pairCount >= 2;
+  }
+
+  return passwordArray.join("");
+}
+
+const password = "hepxxyzz";
+const nextPassword = getNextValidPassword(password);
+console.log("Next valid Password : ", nextPassword);
