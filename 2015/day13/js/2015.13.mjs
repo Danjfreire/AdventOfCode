@@ -20,9 +20,24 @@ rl.on("line", (line) => {
 });
 
 rl.on("close", () => {
-  const res = bruteForce(Array.from(names), happinnessMap);
-  console.log("Best seat order: ", res.permutation);
-  console.log("Happiness change: ", res.change);
+  // part 1
+  const res1 = getHappiness(Array.from(names), happinnessMap);
+  console.log("Part 1");
+  console.log("Best seat order: ", res1.permutation);
+  console.log("Happiness change: ", res1.change);
+
+  console.log("------------------------------------------");
+  // part 2
+  console.log("Part 2");
+  names.forEach((name) => {
+    happinnessMap.set(`${"me"}-${name}`, 0);
+    happinnessMap.set(`${name}-${"me"}`, 0);
+  });
+  names.add("me");
+
+  const res2 = getHappiness(Array.from(names), happinnessMap);
+  console.log("Best seat order: ", res2.permutation);
+  console.log("Happiness change: ", res2.change);
 });
 
 /**
@@ -31,7 +46,7 @@ rl.on("close", () => {
  * @param {Map<string, number>} happinessMap
  * @returns {number} total change in happiness
  */
-function bruteForce(names, happinessMap) {
+function getHappiness(names, happinessMap) {
   const namePermutations = generatePermutations(names);
   console.log(`Found ${namePermutations.length} possible permutations`);
   const namesLength = names.length;
