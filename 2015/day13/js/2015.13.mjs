@@ -9,19 +9,19 @@ const rl = readline.createInterface({
 const pattern =
   /^(\w+) would (lose|gain) (\d+) happiness units by sitting next to (\w+).$/;
 
-const happinnessMap = new Map();
+const happinessMap = new Map();
 const names = new Set();
 
 rl.on("line", (line) => {
   const [_, who, result, amount, nextTo] = line.match(pattern);
   const multiply = result === "gain" ? 1 : -1;
-  happinnessMap.set(`${who}-${nextTo}`, amount * multiply);
+  happinessMap.set(`${who}-${nextTo}`, amount * multiply);
   names.add(who);
 });
 
 rl.on("close", () => {
   // part 1
-  const res1 = getHappiness(Array.from(names), happinnessMap);
+  const res1 = getHappiness(Array.from(names), happinessMap);
   console.log("Part 1");
   console.log("Best seat order: ", res1.permutation);
   console.log("Happiness change: ", res1.change);
@@ -30,12 +30,12 @@ rl.on("close", () => {
   // part 2
   console.log("Part 2");
   names.forEach((name) => {
-    happinnessMap.set(`${"me"}-${name}`, 0);
-    happinnessMap.set(`${name}-${"me"}`, 0);
+    happinessMap.set(`${"me"}-${name}`, 0);
+    happinessMap.set(`${name}-${"me"}`, 0);
   });
   names.add("me");
 
-  const res2 = getHappiness(Array.from(names), happinnessMap);
+  const res2 = getHappiness(Array.from(names), happinessMap);
   console.log("Best seat order: ", res2.permutation);
   console.log("Happiness change: ", res2.change);
 });
