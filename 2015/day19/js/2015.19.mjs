@@ -36,7 +36,6 @@ rl.on("line", (line) => {
 });
 
 rl.on("close", () => {
-  console.log(baseMolecule);
   const combinations = getAllCombinations(baseMolecule, replacementMap);
 
   console.log(`Part 1 :  ${combinations.size}`);
