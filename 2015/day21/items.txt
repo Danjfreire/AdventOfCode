@@ -1,0 +1,16 @@
+weapon Dagger        8     4       0
+weapon Shortsword   10     5       0
+weapon Warhammer    25     6       0
+weapon Longsword    40     7       0
+weapon Greataxe     74     8       0
+armor Leather      13     0       1
+armor Chainmail    31     0       2
+armor Splintmail   53     0       3
+armor Bandedmail   75     0       4
+armor Platemail   102     0       5
+ring Damage+1    25     1       0
+ring Damage+2    50     2       0
+ring Damage+3   100     3       0
+ring Defense+1   20     0       1
+ring Defense+2   40     0       2
+ring Defense+3   80     0       3
