@@ -9,71 +9,39 @@ class GameManager {
   }
 
   playerTurn(spell) {
-    console.log("player casting ", spell.name);
-    for (const effect in this.activeEffects) {
-      this.activeEffects[effect].apply(this);
-    }
-
     this.manaSpent += spell.manaCost;
     this.player.mana -= spell.manaCost;
-    boss.hp -= spell.damage;
-    player.hp += spell.healing;
+    this.boss.hp -= spell.damage;
+    this.player.hp += spell.healing;
 
     if (spell.effect) {
-      this.activeEffects[spell.effect.name] = spell.effect;
+      // TODO
     }
 
-    for (const effect in this.activeEffects) {
-      if (this.activeEffects[effect].duration === 0) {
-        delete this.activeEffects[effect];
-      }
-    }
-    this.log.push(spell.name);
-  }
-
-  bossTurn() {
-    for (const effect in this.activeEffects) {
-      this.activeEffects[effect].apply(this);
-    }
-
-    if (this.boss.hp <= 0) {
-      return;
-    }
-
-    player.hp -= Math.max(1, boss.damage - player.armor);
-
-    for (const effect in this.activeEffects) {
-      if (this.activeEffects[effect].duration === 0) {
-        delete this.activeEffects[effect];
-      }
-    }
-  }
-
-  takeTurn(spell) {
-    // check if spell can be cast
-    const hasMana = this.player.mana >= spell.manaCost;
-    const hasEffect = spell.effect != null;
-    const isEffectActive =
-      hasEffect && this.activeEffects[spell.effect.name] != null;
-
-    if (!hasMana || isEffectActive) {
-      return this.manaSpent;
-    }
-
-    this.playerTurn(spell);
-    this.bossTurn();
-
-    return this.manaSpent;
-  }
-
-  printGameState() {
-    console.log(
-      `Player:{hp:${player.hp}, mana:${player.mana}} | Boss:{hp:${this.boss.hp}}`
+    this.log.push(
+      `player turn - ${spell.name} | P.HP:${this.player.hp} P.MP:${this.player.mana}  B:${this.boss.hp}`
     );
   }
 
+  tickEffects() {}
+
+  bossTurn() {
+    if (this.isGameOver()) return;
+    this.player.hp -= Math.max(1, this.boss.damage - this.player.armor);
+    this.log.push(
+      `boss turn - attacks player | P:${this.player.hp} P.MP:${this.player.mana} B:${this.boss.hp}`
+    );
+  }
+
+  takeTurn(spell) {
+    this.tickEffects();
+    this.playerTurn(spell);
+    this.tickEffects();
+    this.bossTurn();
+  }
+
   isGameOver() {
-    return player.hp <= 0 || boss.hp <= 0;
+    return this.player.hp <= 0 || this.boss.hp <= 0;
   }
 }
 
@@ -96,7 +64,6 @@ class Effect {
 
   apply(game) {
     this.effectFn(game);
-    this.duration--;
   }
 }
 
@@ -124,25 +91,53 @@ const recharge = new Spell("Recharge", 229, 0, 0, rechargeEffect);
 
 const spellList = [magicMissile, drain, shield, poison, recharge];
 
+function getAvailableSpells(game) {
+  if (game.isGameOver()) return [];
+
+  return spellList.filter((spell) => {
+    const hasMana = game.player.mana >= spell.manaCost;
+    const hasEffect =
+      spell.effect != null &&
+      game.activeEffects[spell.effect.name] != null &&
+      game.activeEffects[spell.effect.name].duration > 1;
+
+    return hasMana && !hasEffect;
+  });
+}
+
 function findOptimalManaSpent(game, minManaSpent) {
-  if (game.isGameOver() || game.manaSpent >= minManaSpent) {
+  if (game.isGameOver()) {
+    // console.log("game over but the player lost");
+    if (game.player.hp > 0 && game.manaSpent < minManaSpent) {
+      console.log(
+        "found game over",
+        game.manaSpent,
+        game.log,
+        game.player,
+        game.boss
+      );
+      minManaSpent = game.manaSpent;
+    }
     return minManaSpent;
   }
 
-  for (const spell of spellList) {
+  const availableSpells = getAvailableSpells(game);
+
+  if (availableSpells.length === 0) {
+    return minManaSpent; // the boss won
+  }
+
+  for (const spell of availableSpells) {
     const newGame = new GameManager(
       { ...game.player },
       { ...game.boss },
       game.manaSpent,
-      { ...game.activeEffects },
+      {},
       [...game.log]
     );
 
-    const manaSpent = newGame.takeTurn(spell);
-
-    if (!newGame.isGameOver() && manaSpent < minManaSpent) {
-      minManaSpent = findOptimalManaSpent(newGame, manaSpent);
-    }
+    newGame.takeTurn(spell);
+    minManaSpent = findOptimalManaSpent(newGame, minManaSpent);
   }
 
   return minManaSpent;
