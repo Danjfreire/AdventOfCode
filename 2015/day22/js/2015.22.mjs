@@ -1,21 +1,32 @@
 class GameManager {
-  constructor(player, boss, manaSpent, activeEffects, log) {
+  constructor(difficulty, player, boss, manaSpent, activeEffects, log) {
+    this.difficulty = difficulty;
     this.player = player;
     this.boss = boss;
-    this.activeEffects = { ...activeEffects };
+    this.activeEffects = activeEffects || [];
     this.manaSpent = manaSpent;
     this.gameOver = false;
     this.log = log || [];
   }
 
-  playerTurn(spell) {
+  playerTurn(spell, playerRoundBonuses) {
+    if (this.difficulty === "hard") {
+      this.player.hp -= 1;
+      if (this.isGameOver()) return;
+    }
+
+    this.player.mana += playerRoundBonuses.playerManaRegen;
+    this.boss.hp -= playerRoundBonuses.bossDamage;
+
+    if (this.isGameOver()) return;
+
     this.manaSpent += spell.manaCost;
     this.player.mana -= spell.manaCost;
     this.boss.hp -= spell.damage;
     this.player.hp += spell.healing;
 
     if (spell.effect) {
-      // TODO
+      this.activeEffects.push({ ...spell.effect });
     }
 
     this.log.push(
@@ -23,21 +34,43 @@ class GameManager {
     );
   }
 
-  tickEffects() {}
+  tickEffects() {
+    const roundBonuses = {
+      bossDamage: 0,
+      playerArmor: 0,
+      playerManaRegen: 0,
+    };
 
-  bossTurn() {
+    for (const effect of this.activeEffects) {
+      effect.effectFn(roundBonuses);
+      effect.duration--;
+    }
+
+    this.activeEffects = this.activeEffects.filter(
+      (effect) => effect.duration > 0
+    );
+
+    return roundBonuses;
+  }
+
+  bossTurn(bossRoundBonuses) {
+    this.player.mana += bossRoundBonuses.playerManaRegen;
+    this.boss.hp -= bossRoundBonuses.bossDamage;
     if (this.isGameOver()) return;
-    this.player.hp -= Math.max(1, this.boss.damage - this.player.armor);
+    this.player.hp -= Math.max(
+      1,
+      this.boss.damage - (this.player.armor + bossRoundBonuses.playerArmor)
+    );
     this.log.push(
       `boss turn - attacks player | P:${this.player.hp} P.MP:${this.player.mana} B:${this.boss.hp}`
     );
   }
 
   takeTurn(spell) {
-    this.tickEffects();
-    this.playerTurn(spell);
-    this.tickEffects();
-    this.bossTurn();
+    const playerRoundBonuses = this.tickEffects();
+    this.playerTurn(spell, playerRoundBonuses);
+    const bossRoundBonuses = this.tickEffects();
+    this.bossTurn(bossRoundBonuses);
   }
 
   isGameOver() {
@@ -62,21 +95,21 @@ class Effect {
     this.effectFn = effectFn;
   }
 
-  apply(game) {
-    this.effectFn(game);
+  apply(roundBonuses) {
+    this.effectFn(roundBonuses);
   }
 }
 
-const applyPoison = (game) => {
-  game.boss.hp -= 3;
+const applyPoison = (roundBonuses) => {
+  roundBonuses.bossDamage += 3;
 };
 
-const applyShield = (game) => {
-  game.player.armor += 7;
+const applyShield = (roundBonuses) => {
+  roundBonuses.playerArmor += 7;
 };
 
-const applyRecharge = (game) => {
-  game.player.mana += 101;
+const applyRecharge = (roundBonuses) => {
+  roundBonuses.playerManaRegen += 101;
 };
 
 const poisonEffect = new Effect("poison", 6, applyPoison);
@@ -96,29 +129,27 @@ function getAvailableSpells(game) {
 
   return spellList.filter((spell) => {
     const hasMana = game.player.mana >= spell.manaCost;
-    const hasEffect =
-      spell.effect != null &&
-      game.activeEffects[spell.effect.name] != null &&
-      game.activeEffects[spell.effect.name].duration > 1;
+    const hasActiveEffect = game.activeEffects.find(
+      (effect) =>
+        spell.effect && effect.name === spell.effect.name && effect.duration > 1
+    );
 
-    return hasMana && !hasEffect;
+    return hasMana && !hasActiveEffect;
   });
 }
 
 function findOptimalManaSpent(game, minManaSpent) {
   if (game.isGameOver()) {
-    // console.log("game over but the player lost");
     if (game.player.hp > 0 && game.manaSpent < minManaSpent) {
-      console.log(
-        "found game over",
-        game.manaSpent,
-        game.log,
-        game.player,
-        game.boss
-      );
+      // console.log("Mana spent :", game.manaSpent);
+      // console.log(game.log);
       minManaSpent = game.manaSpent;
     }
     return minManaSpent;
+  } else {
+    if (game.manaSpent > minManaSpent) {
+      return minManaSpent;
+    }
   }
 
   const availableSpells = getAvailableSpells(game);
@@ -129,10 +160,11 @@ function findOptimalManaSpent(game, minManaSpent) {
 
   for (const spell of availableSpells) {
     const newGame = new GameManager(
+      game.difficulty,
       { ...game.player },
       { ...game.boss },
       game.manaSpent,
-      {},
+      game.activeEffects.map((effect) => ({ ...effect })),
       [...game.log]
     );
 
@@ -153,6 +185,9 @@ const boss = {
   hp: 55,
   damage: 8,
 };
-const game = new GameManager(player, boss, 0, null, []);
-const manaSpent = findOptimalManaSpent(game, Infinity);
-console.log(manaSpent);
+const normalGame = new GameManager("normal", player, boss, 0, [], []);
+const hardGame = new GameManager("hard", player, boss, 0, [], []);
+const part1ManaSpent = findOptimalManaSpent(normalGame, Infinity);
+const part2ManaSpent = findOptimalManaSpent(hardGame, Infinity);
+console.log("Part 1:", part1ManaSpent);
+console.log("Part 2:", part2ManaSpent);
