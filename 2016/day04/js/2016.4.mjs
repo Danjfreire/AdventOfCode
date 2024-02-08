@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
 
 function decryptRoom(name, sectorId) {
-  const topCharcode = 122;
-  const minCharcode = 97;
+  const minCharcode = 97; // a
   let decrypted = "";
   for (let i = 0; i < name.length; i++) {
     if (name.charAt(i) === "-") {
@@ -10,19 +9,11 @@ function decryptRoom(name, sectorId) {
       continue;
     }
 
-    let charCode = name.charCodeAt(i);
+    const charCode = ((name.charCodeAt(i) - minCharcode + sectorId) % 26) + minCharcode;
 
-    for (let j = 0; j < sectorId; j++) {
-      if (charCode === topCharcode) {
-        charCode = minCharcode;
-      } else {
-        charCode++;
-      }
-    }
     decrypted += String.fromCharCode(charCode);
   }
 
-  // console.log(decrypted, sectorId);
   return decrypted;
 }
 
@@ -71,4 +62,4 @@ const p1 = rooms.reduce((prev, cur) => {
 }, 0);
 const p2 = rooms.find((room) => decryptRoom(room.roomName, room.sectorId).includes("north")).sectorId;
 console.log("Part 1 :", p1);
-console.log("Part 1 :", p2);
+console.log("Part 2 :", p2);
