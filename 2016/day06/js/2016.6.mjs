@@ -35,6 +35,7 @@ function getFrequentsCharsForPosition(lines, position) {
   return { leastFrequentChar, moreFrequentChar };
 }
 
+console.time("attempt1");
 const input = readInput();
 let part1 = "";
 let part2 = "";
@@ -44,5 +45,6 @@ for (let i = 0; i < input[0].length; i++) {
   part2 += leastFrequentChar;
 }
 
+console.timeEnd("attempt1");
 console.log("Part 1:", part1);
 console.log("Part 2:", part2);
